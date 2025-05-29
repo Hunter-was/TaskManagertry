@@ -91,6 +91,28 @@
         const lat = pos.coords.latitude.toFixed(10);
         const lon = pos.coords.longitude.toFixed(10);
         print(`Latitude: ${lat}, Longitude: ${lon}`);
+
+        fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`)
+          .then(res => res.json())
+          .then(data => {
+            const address = data.address;
+
+            const placename = address.attraction || address.park || address.building || address.neighbourhood || address.suburb || "";
+            const road = address.road || "";
+            const house_number = address.house_number || "";
+            const city = address.city || address.town || address.village || "";
+            const state = address.state || "";
+            const postcode = address.postcode || "";
+            const country = address.country || "";
+            const state_code = address.state_code || "";
+
+            const formatted = `${placename} ${house_number} ${road} ${postcode} ${state_code} ${state} ${country}`.trim().replace(/\s+/g, ' ');
+            print(`Address: ${formatted}`);
+          })
+          .catch(err => {
+            print("Error retrieving address.");
+            console.error(err);
+          });
       }, () => {
         print("Unable to retrieve your location.");
       });
