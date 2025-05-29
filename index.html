@@ -112,43 +112,46 @@
       print("\nAvailable Commands:\n" + commands.join("\n"));
     }
 
-    function handleCommand(line) {
-      const [command, ...rest] = line.trim().split(" ");
-      if (command === "date") {
-        print("Current date: " + formatDate(new Date()));
-      } else if (command === "add") {
-        const name = prompt("New task name:");
-        step = 'add_name';
-        state = { name: '' };
-        return;
-      } else if (command === "list") {
-        print(getTaskList());
-      } else if (command === "fin") {
-        const name = prompt("Which task to delete? (name or number):");
-        step = 'delete_task';
-        return;
-      } else if (command === "color") {
-        prompt("Which task? (name or number):");
-        step = 'color_task';
-        return;
-      } else if (command === "coords") {
-        print("Getting location...");
-        getLocation();
-      } else if (command === "commands") {
-        showCommands();
-      } else if (command === "new_user") {
-        prompt("New user name:");
-        step = 'new_user';
-      } else if (command === "user") {
-        prompt("Switch to user:");
-        step = 'switch_user';
-      } else if (command === "time") {
-        prompt("For which task? (name or number):");
-        step = 'time_task';
-      } else {
-        print("Unknown command. Type 'commands' to see options.");
-      }
-    }
+ function handleCommand(line) {
+  const [command, ...rest] = line.trim().split(" ");
+  if (command === "date") {
+    print("Current date: " + formatDate(new Date()));
+  } else if (command === "add") {
+    const name = prompt("New task name:");
+    step = 'add_name';
+    state = { name: '' };
+    return;
+  } else if (command === "list") {
+    print(getTaskList());
+  } else if (command === "fin") {
+    const name = prompt("Which task to delete? (name or number):");
+    step = 'delete_task';
+    return;
+  } else if (command === "color") {
+    prompt("Which task? (name or number):");
+    step = 'color_task';
+    return;
+  } else if (command === "coords") {
+    print("Getting location...");
+    getLocation();
+  } else if (command === "commands") {
+    showCommands();
+  } else if (command === "new_user") {
+    prompt("New user name:");
+    step = 'new_user';
+  } else if (command === "user") {
+    prompt("Switch to user:");
+    step = 'switch_user';
+  } else if (command === "time") {
+    prompt("For which task? (name or number):");
+    step = 'time_task';
+  } else if (command === "clear") {
+    consoleEl.textContent = '';
+  } else {
+    print("Unknown command. Type 'commands' to see options.");
+  }
+}
+
 
     let state = {};
 
