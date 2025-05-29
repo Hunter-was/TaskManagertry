@@ -91,8 +91,8 @@
       }
 
       navigator.geolocation.getCurrentPosition(pos => {
-        const lat = pos.coords.latitude.toFixed(4);
-        const lon = pos.coords.longitude.toFixed(4);
+        const lat = pos.coords.latitude.toFixed(5);
+        const lon = pos.coords.longitude.toFixed(5);
         print(Latitude: ${lat}, Longitude: ${lon});
       }, () => {
         print("Unable to retrieve your location.");
