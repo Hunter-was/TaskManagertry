@@ -119,55 +119,70 @@
     }
 
     function showCommands() {
-      const commands = [
-        "add - Add a new task",
-        "color - Assign a description to a task",
-        "commands - List available commands",
-        "coords - Show current coordinates",
-        "date - Show today's date",
-        "fin - Finish/delete a task",
-        "list - List all tasks",
-        "new_user - Create and switch to a new user",
-        "time - Add time to a task",
-        "user - Switch to existing user"
-      ];
-      print("\nAvailable Commands:\n" + commands.join("\n"));
-    }
+  const commands = [
+    "add - Add a new task",
+    "color - Assign a description to a task",
+    "commands - List available commands",
+    "coords - Show current coordinates",
+    "date - Show today's date",
+    "fin - Finish/delete a task",
+    "list - List all tasks",
+    "new_user - Create and switch to a new user",
+    "time - Add time to a task",
+    "user - Switch to existing user",
+    "/kill - Turn text red (simulate shutdown)",
+    "/revive - Turn text green (revive console)"
+  ];
+  print("\nAvailable Commands:\n" + commands.join("\n"));
+}
 
-    function handleCommand(line) {
-      const [command, ...rest] = line.trim().split(" ");
-      if (command === "date") {
-        print("Current date: " + formatDate(new Date()));
-      } else if (command === "add") {
-        prompt("New task name:");
-        step = 'add_name';
-        state = { name: '' };
-      } else if (command === "list") {
-        print(getTaskList());
-      } else if (command === "fin") {
-        prompt("Which task to delete? (name or number):");
-        step = 'delete_task';
-      } else if (command === "color") {
-        prompt("Which task? (name or number):");
-        step = 'color_task';
-      } else if (command === "coords") {
-        print("Getting location...");
-        getLocation();
-      } else if (command === "commands") {
-        showCommands();
-      } else if (command === "new_user") {
-        prompt("New user name:");
-        step = 'new_user';
-      } else if (command === "user") {
-        prompt("Switch to user:");
-        step = 'switch_user';
-      } else if (command === "time") {
-        prompt("For which task? (name or number):");
-        step = 'time_task';
-      } else {
-        print("Unknown command. Type 'commands' to see options.");
-      }
-    }
+
+   function handleCommand(line) {
+  const [command, ...rest] = line.trim().split(" ");
+  
+  if (command === "date") {
+    print("Current date: " + formatDate(new Date()));
+  } else if (command === "add") {
+    prompt("New task name:");
+    step = 'add_name';
+    state = { name: '' };
+  } else if (command === "list") {
+    print(getTaskList());
+  } else if (command === "fin") {
+    prompt("Which task to delete? (name or number):");
+    step = 'delete_task';
+  } else if (command === "color") {
+    prompt("Which task? (name or number):");
+    step = 'color_task';
+  } else if (command === "coords") {
+    print("Getting location...");
+    getLocation();
+  } else if (command === "commands") {
+    showCommands();
+  } else if (command === "new_user") {
+    prompt("New user name:");
+    step = 'new_user';
+  } else if (command === "user") {
+    prompt("Switch to user:");
+    step = 'switch_user';
+  } else if (command === "time") {
+    prompt("For which task? (name or number):");
+    step = 'time_task';
+  } else if (command === "/kill") {
+    document.body.style.color = "#f00";
+    inputEl.style.color = "#f00";
+    inputEl.style.backgroundColor = "#000";
+    print("Console killed. Text is now red.");
+  } else if (command === "/revive") {
+    document.body.style.color = "#0f0";
+    inputEl.style.color = "#0f0";
+    inputEl.style.backgroundColor = "#000";
+    print("Console revived. Text is now green.");
+  } else {
+    print("Unknown command. Type 'commands' to see options.");
+  }
+}
+
 
     inputEl.addEventListener('keydown', e => {
       if (e.key === 'Enter') {
