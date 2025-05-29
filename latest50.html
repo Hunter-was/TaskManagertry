@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Python Task Manager (Simulated Console)</title>
+  <style>
+    body {
+      background-color: #1e1e1e;
+      color: #d4d4d4;
+      font-family: monospace;
+      padding: 20px;
+    }
+    #console {
+      background-color: #252526;
+      padding: 10px;
+      border-radius: 8px;
+      min-height: 300px;
+      max-width: 800px;
+      margin: auto;
+      white-space: pre-wrap;
+    }
+    #input {
+      width: 100%;
+      padding: 10px;
+      background-color: #1e1e1e;
+      color: #d4d4d4;
+      border: 1px solid #444;
+      font-family: monospace;
+      font-size: 1rem;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div id="console"></div>
+  <input id="input" type="text" placeholder="execute:" autofocus>
+
+  <script>
+    const consoleElement = document.getElementById('console');
+    const inputElement = document.getElementById('input');
+
+    const tasks = [
+      { name: "Buy groceries", dueDate: new Date(Date.now() + 86400000) },
+      { name: "Read book", dueDate: new Date(Date.now() + 3600000 * 3) },
+      { name: "Do homework", dueDate: new Date(Date.now() + 60000 * 30) }
+    ];
+
+    function fakeConsolePrint(text) {
+      consoleElement.innerHTML += text + "\n";
+      consoleElement.scrollTop = consoleElement.scrollHeight;
+    }
+
+    function timeLeftText(dueDate) {
+      const now = new Date();
+      const diff = dueDate - now;
+      const mins = Math.floor(diff / 60000);
+      const hours = Math.floor(mins / 60);
+      const days = Math.floor(hours / 24);
+
+      if (diff <= 0) return "(past due)";
+      if (mins < 60) return `(${mins} minutes left)`;
+      if (hours < 24) return `(${hours} hours left)`;
+      return `(${days} days left)`;
+    }
+
+    function simulateCommand(command) {
+      const cmd = command.trim().toLowerCase();
+
+      if (cmd === 'coords') {
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(
+            (position) => {
+              const lat = position.coords.latitude.toFixed(4);
+              const lon = position.coords.longitude.toFixed(4);
+              fakeConsolePrint(`Latitude: ${lat}, Longitude: ${lon}`);
+              fakeConsolePrint(`Approximate Address: (based on browser location)`);
+            },
+            (error) => {
+              fakeConsolePrint("Location not available or denied by user.");
+            }
+          );
+        } else {
+          fakeConsolePrint("Geolocation not supported by this browser.");
+        }
+      } else if (cmd === 'color') {
+        fakeConsolePrint("Prompting: For which task? (simulated)");
+      } else if (cmd === 'commands') {
+        fakeConsolePrint("Available Commands:\n[add] - Add a new task.\n[color] - Assign a description to a task.\n[commands] - List all available commands.\n[coords] - Display current coordinates and address.\n[date] - Display the current date.\n[fin] - Finish (delete) a task.\n[list] - Display all tasks sorted by due date.\n[new_user] - Create and switch to a new user.\n[time] - Add a due time to an existing task.\n[user] - Switch to an existing user.");
+      } else if (cmd === 'fin') {
+        fakeConsolePrint("Prompting: Which task to delete? (simulated)");
+      } else if (cmd === 'list') {
+        if (tasks.length === 0) {
+          fakeConsolePrint("No tasks to show.");
+        } else {
+          fakeConsolePrint("\nTo-do:");
+          tasks.forEach((task, i) => {
+            const day = task.dueDate.toLocaleDateString(undefined, { weekday: 'long' });
+            const date = task.dueDate.toLocaleDateString();
+            const time = task.dueDate.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+            const left = timeLeftText(task.dueDate);
+            fakeConsolePrint(`${i + 1}. ${task.name} ${day} ${date} at ${time} ${left}`);
+          });
+        }
+      } else {
+        fakeConsolePrint(`Unknown command: ${command}`);
+      }
+    }
+
+    inputElement.addEventListener('keypress', function (e) {
+      if (e.key === 'Enter') {
+        const userCommand = inputElement.value;
+        fakeConsolePrint(`execute: ${userCommand}`);
+        simulateCommand(userCommand);
+        inputElement.value = '';
+      }
+    });
+  </script>
+</body>
+</html>
