@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Task Manager Console</title>
+  <style>
+    body {
+      font-family: monospace;
+      background: #121212;
+      color: #e0e0e0;
+      padding: 20px;
+    }
+    #console {
+      white-space: pre-wrap;
+      margin-bottom: 10px;
+    }
+    #input {
+      width: 100%;
+      padding: 10px;
+      background: #1e1e1e;
+      color: white;
+      border: none;
+      outline: none;
+      font-family: monospace;
+    }
+  </style>
+</head>
+<body>
+  <div id="console">User: </div>
+  <input type="text" id="input" autocomplete="off" autofocus />
+
+  <script>
+    const consoleDiv = document.getElementById('console');
+    const input = document.getElementById('input');
+    let stage = 'username';
+    let currentUser = '';
+    let tasks = [];
+
+    const commands = {
+      date: () => new Date().toLocaleDateString(),
+      list: () => tasks.length ? tasks.map((t, i) => `${i + 1}. ${t}`).join('\n') : "No tasks to show.",
+      add: () => { stage = 'add_task'; return "New task:"; },
+      color: () => { stage = 'color_task'; return "Task number to describe:"; },
+      coords: () => "Latitude: 00.0000, Longitude: 00.0000\nApproximate Address: (simulated)",
+      commands: () => Object.keys(commands).sort().map(c => `[${c}]`).join(' '),
+      fin: () => { stage = 'fin_task'; return "Which task to delete? (number):"; },
+      ndate: () => { stage = 'set_date'; return "Enter new date (MM/DD/YYYY):"; },
+      time_add: () => { stage = 'time_task'; return "Task number to add time:"; },
+      new_user: () => { stage = 'new_user'; return "New user name:"; },
+      user: () => { stage = 'switch_user'; return "Switch to user:"; },
+      gps_info: () =>
+        "- Accurate location requires a GPS-enabled device.\n- On desktops, this is not usually available.\n- Mobile apps can request it.",
+    };
+
+    function append(text) {
+      consoleDiv.innerText += "\n" + text;
+      window.scrollTo(0, document.body.scrollHeight);
+    }
+
+    input.addEventListener('keydown', e => {
+      if (e.key === 'Enter') {
+        const value = input.value.trim();
+        input.value = '';
+        append(`> ${value}`);
+
+        if (stage === 'username') {
+          currentUser = value;
+          append(`Hello, ${currentUser}. Type 'commands' to see available commands.`);
+          stage = 'command';
+        }
+
+        else if (stage === 'command') {
+          if (commands[value]) {
+            const response = commands[value]();
+            if (response) append(response);
+          } else {
+            append("Unknown command. Type 'commands' to see available commands.");
+          }
+        }
+
+        else if (stage === 'add_task') {
+          tasks.push(value);
+          append(`Task "${value}" added.`);
+          stage = 'command';
+        }
+
+        else if (stage === 'color_task') {
+          const index = parseInt(value) - 1;
+          if (tasks[index]) {
+            stage = 'color_desc';
+            input.dataset.taskIndex = index;
+            append("Add description:");
+          } else {
+            append("Invalid task number.");
+            stage = 'command';
+          }
+        }
+
+        else if (stage === 'color_desc') {
+          const i = parseInt(input.dataset.taskIndex);
+          tasks[i] += ` - Description: ${value}`;
+          append("Description added.");
+          stage = 'command';
+        }
+
+        else if (stage === 'fin_task') {
+          const i = parseInt(value) - 1;
+          if (tasks[i]) {
+            append(`Removed: ${tasks[i]}`);
+            tasks.splice(i, 1);
+          } else {
+            append("Task not found.");
+          }
+          stage = 'command';
+        }
+
+        else if (stage === 'set_date') {
+          append(`Date set to ${value} (simulated).`);
+          stage = 'command';
+        }
+
+        else if (stage === 'time_task') {
+          const i = parseInt(value) - 1;
+          if (tasks[i]) {
+            stage = 'time_value';
+            input.dataset.taskIndex = i;
+            append("What time? (e.g., 3:00 PM)");
+          } else {
+            append("Task not found.");
+            stage = 'command';
+          }
+        }
+
+        else if (stage === 'time_value') {
+          const i = parseInt(input.dataset.taskIndex);
+          tasks[i] += ` at ${value}`;
+          append("Time added.");
+          stage = 'command';
+        }
+
+        else if (stage === 'new_user') {
+          currentUser = value;
+          tasks = [];
+          append(`Switched to new user: ${currentUser}`);
+          stage = 'command';
+        }
+
+        else if (stage === 'switch_user') {
+          currentUser = value;
+          tasks = [];
+          append(`Switched to user: ${currentUser}`);
+          stage = 'command';
+        }
+      }
+    });
+  </script>
+</body>
+</html>
