@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Task Manager Console</title>
+  <style>
+    body {
+      background: #111;
+      color: #0f0;
+      font-family: monospace;
+      padding: 10px;
+    }
+    #console {
+      white-space: pre-wrap;
+      min-height: 300px;
+    }
+    input {
+      background: #000;
+      color: #0f0;
+      border: none;
+      outline: none;
+      font-family: monospace;
+      width: 100%;
+    }
+  </style>
+</head>
+<body>
+  <div id="console">User: </div>
+  <input id="input" type="text" autofocus />
+
+  <script>
+    const consoleEl = document.getElementById('console');
+    const inputEl = document.getElementById('input');
+
+    let users = {};
+    let currentUser = null;
+    let step = 'user';
+
+    function print(msg = '') {
+      consoleEl.textContent += `\n${msg}`;
+      window.scrollTo(0, document.body.scrollHeight);
+    }
+
+    function prompt(text) {
+      consoleEl.textContent += `\n${text}`;
+    }
+
+    function formatDate(date) {
+      return `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()}`;
+    }
+
+    function formatTime(date) {
+      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+
+    function timeLeftString(futureDate) {
+      const now = new Date();
+      const diff = futureDate - now;
+      if (diff <= 0) return 'due';
+
+      const mins = Math.floor(diff / (1000 * 60));
+      const hours = Math.floor(diff / (1000 * 60 * 60));
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+
+      if (mins < 60) return `${mins} minutes left`;
+      else if (hours < 24) return `${hours} hours left`;
+      else return `${days} days left`;
+    }
+
+    function getTaskList() {
+      const tasks = users[currentUser].tasks;
+      if (!tasks.length) return 'No tasks to show.';
+
+      return tasks.map((t, i) => {
+        const due = new Date(t.due);
+        const time = t.time ? ` at ${t.time}` : '';
+        const desc = t.desc || 'none';
+        return `${i + 1}. ${t.name} ${formatDate(due)}${time} (${timeLeftString(due)}) - Description: ${desc}`;
+      }).join('\n');
+    }
+
+    function getLocation() {
+      if (!navigator.geolocation) {
+        print("Geolocation not supported by your browser.");
+        return;
+      }
+
+      navigator.geolocation.getCurrentPosition(pos => {
+        const lat = pos.coords.latitude.toFixed(5);
+        const lon = pos.coords.longitude.toFixed(5);
+        print(`Latitude: ${lat}, Longitude: ${lon}`);
+      }, () => {
+        print("Unable to retrieve your location.");
+      });
+    }
+
+    function showCommands() {
+      const commands = [
+        "add - Add a new task",
+        "color - Assign a description to a task",
+        "commands - List available commands",
+        "coords - Show current coordinates",
+        "date - Show today's date",
+        "fin - Finish/delete a task",
+        "list - List all tasks",
+        "new_user - Create and switch to a new user",
+        "time - Add time to a task",
+        "user - Switch to existing user"
+      ];
+      print("\nAvailable Commands:\n" + commands.join("\n"));
+    }
+
+    function handleCommand(line) {
+      const [command, ...rest] = line.trim().split(" ");
+      if (command === "date") {
+        print("Current date: " + formatDate(new Date()));
+      } else if (command === "add") {
+        prompt("New task name:");
+        step = 'add_name';
+        state = { name: '' };
+      } else if (command === "list") {
+        print(getTaskList());
+      } else if (command === "fin") {
+        prompt("Which task to delete? (name or number):");
+        step = 'delete_task';
+      } else if (command === "color") {
+        prompt("Which task? (name or number):");
+        step = 'color_task';
+      } else if (command === "coords") {
+        print("Getting location...");
+        getLocation();
+      } else if (command === "commands") {
+        showCommands();
+      } else if (command === "new_user") {
+        prompt("New user name:");
+        step = 'new_user';
+      } else if (command === "user") {
+        prompt("Switch to user:");
+        step = 'switch_user';
+      } else if (command === "time") {
+        prompt("For which task? (name or number):");
+        step = 'time_task';
+      } else {
+        print("Unknown command. Type 'commands' to see options.");
+      }
+    }
+
+    let state = {};
+
+    inputEl.addEventListener('keydown', e => {
+      if (e.key === 'Enter') {
+        const val = inputEl.value.trim();
+        consoleEl.textContent += "\nexecute: " + val;
+        inputEl.value = '';
+
+        if (step === 'user') {
+          currentUser = val;
+          if (!users[currentUser]) users[currentUser] = { tasks: [] };
+          print(`Hello ${currentUser}`);
+          step = 'main';
+        } else if (step === 'main') {
+          handleCommand(val);
+        } else if (step === 'add_name') {
+          state.name = val;
+          prompt("Due date? (MM/DD/YYYY):");
+          step = 'add_due';
+        } else if (step === 'add_due') {
+          const due = new Date(val);
+          if (isNaN(due)) return print("Invalid date.");
+          users[currentUser].tasks.push({ name: state.name, due: due });
+          print(`Added task '${state.name}' due ${formatDate(due)}`);
+          step = 'main';
+        } else if (step === 'delete_task') {
+          const idx = parseInt(val) - 1;
+          if (users[currentUser].tasks[idx]) {
+            const task = users[currentUser].tasks.splice(idx, 1)[0];
+            print(`Removed: ${task.name}`);
+          } else {
+            print("Task not found.");
+          }
+          step = 'main';
+        } else if (step === 'color_task') {
+          state.taskIndex = parseInt(val) - 1;
+          prompt("Add description:");
+          step = 'color_desc';
+        } else if (step === 'color_desc') {
+          if (users[currentUser].tasks[state.taskIndex]) {
+            users[currentUser].tasks[state.taskIndex].desc = val;
+            print("Description added.");
+          } else {
+            print("Task not found.");
+          }
+          step = 'main';
+        } else if (step === 'new_user') {
+          if (users[val]) print("User already exists.");
+          else {
+            users[val] = { tasks: [] };
+            currentUser = val;
+            print(`Switched to new user ${val}`);
+          }
+          step = 'main';
+        } else if (step === 'switch_user') {
+          if (users[val]) {
+            currentUser = val;
+            print(`Switched to ${val}`);
+          } else {
+            print("User not found.");
+          }
+          step = 'main';
+        } else if (step === 'time_task') {
+          state.taskIndex = parseInt(val) - 1;
+          prompt("What time? (e.g., 3:00 PM):");
+          step = 'time_set';
+        } else if (step === 'time_set') {
+          if (users[currentUser].tasks[state.taskIndex]) {
+            users[currentUser].tasks[state.taskIndex].time = val;
+            print("Time added.");
+          } else {
+            print("Task not found.");
+          }
+          step = 'main';
+        }
+      }
+    });
+  </script>
+</body>
+</html>
