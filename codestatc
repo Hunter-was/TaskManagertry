@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Task Manager Console</title>
+  <style>
+    body { background: #111; color: #0f0; font-family: monospace; padding: 10px; }
+    #console { height: 90vh; overflow-y: auto; border: 1px solid #0f0; padding: 10px; }
+    input { background: #111; color: #0f0; border: none; width: 100%; font-family: monospace; font-size: 1em; }
+  </style>
+</head>
+<body>
+  <div id="console"></div>
+  <input id="commandInput" autocomplete="off" autofocus placeholder="execute:">
+  <script>
+    const consoleDiv = document.getElementById("console");
+    const input = document.getElementById("commandInput");
+    let user = null;
+    let tasks = {};
+
+    function log(text) {
+      consoleDiv.innerHTML += `<div>${text}</div>`;
+      consoleDiv.scrollTop = consoleDiv.scrollHeight;
+    }
+
+    function formatTimeLeft(due) {
+      const now = new Date();
+      const msLeft = due - now;
+      if (msLeft <= 0) return "(overdue)";
+      const min = 60 * 1000;
+      const hr = 60 * min;
+      const day = 24 * hr;
+      if (msLeft < min) return `(${Math.floor(msLeft / 1000)} seconds left)`;
+      if (msLeft < hr) return `(${Math.floor(msLeft / min)} minutes left)`;
+      if (msLeft < day) return `(${Math.floor(msLeft / hr)} hours left)`;
+      return `(${Math.floor(msLeft / day)} days left)`;
+    }
+
+    function listTasks() {
+      if (!tasks[user] || tasks[user].length === 0) {
+        log("No tasks to show.");
+        return;
+      }
+      log("<br>To-do:");
+      const now = new Date();
+      const sorted = [...tasks[user]].sort((a, b) => new Date(a.due) - new Date(b.due));
+      sorted.forEach((t, i) => {
+        const dueDate = new Date(t.due);
+        const desc = t.desc ? ` - Description: ${t.desc}` : "";
+        const timeStr = t.time ? ` at ${t.time}` : "";
+        log(`${i+1}. ${t.name} ${dueDate.toLocaleDateString()}${timeStr} ${formatTimeLeft(dueDate)}${desc}`);
+      });
+    }
+
+    function showCommands() {
+      log("<br>Available Commands:");
+      const cmds = {
+        "add": "Add a new task.",
+        "color": "Assign a description to a task.",
+        "commands": "List all available commands.",
+        "coords": "Display current coordinates and address.",
+        "date": "Display the current date.",
+        "fin": "Finish (delete) a task.",
+        "list": "Display all tasks sorted by due date.",
+        "new_user": "Create and switch to a new user.",
+        "time": "Add a due time to an existing task.",
+        "user": "Switch to an existing user."
+      };
+      for (let c in cmds) log(`[${c}] - ${cmds[c]}`);
+    }
+
+    async function getCoords() {
+      log("<br>Note: This is IP-based and may not reflect exact GPS coordinates.\n");
+      try {
+        const res = await fetch("https://ipinfo.io/json?token=YOUR_TOKEN");
+        const data = await res.json();
+        const [lat, lon] = data.loc.split(",");
+        log(`Latitude: ${lat}, Longitude: ${lon}`);
+        log(`Approximate Address: ${data.city}, ${data.region}, ${data.postal}, ${data.country}`);
+        log(`ISP / Organization: ${data.org}`);
+      } catch {
+        log("Latitude: 00.0000, Longitude: 00.0000");
+        log("Approximate Address: (simulated)");
+      }
+    }
+
+    input.addEventListener("keydown", async e => {
+      if (e.key !== "Enter") return;
+      const cmd = input.value.trim();
+      input.value = "";
+      log(`> ${cmd}`);
+
+      if (!user) {
+        user = cmd;
+        if (!tasks[user]) tasks[user] = [];
+        log(`User: ${user}`);
+        return;
+      }
+
+      if (cmd === "date") log("Current date: " + new Date().toLocaleDateString());
+      else if (cmd === "add") {
+        const taskName = prompt("New task:");
+        const dueStr = prompt("When is it due? (MM/DD/YYYY):");
+        const dueDate = new Date(dueStr);
+        if (isNaN(dueDate)) log("Invalid date.");
+        else {
+          tasks[user].push({ name: taskName, due: dueDate, desc: "" });
+          log(`Task '${taskName}' added.`);
+        }
+      }
+      else if (cmd === "time") {
+        const id = prompt("Which task? (name or number):");
+        let index = isNaN(id) ? tasks[user].findIndex(t => t.name === id) : parseInt(id)-1;
+        if (index >= 0 && tasks[user][index]) {
+          const timeStr = prompt("What time is it due? (e.g., 3:00 PM):");
+          tasks[user][index].time = timeStr;
+          log(`Time added to task at ${timeStr}`);
+        } else log("Task not found.");
+      }
+      else if (cmd === "color") {
+        const id = prompt("Which task? (name or number):");
+        let index = isNaN(id) ? tasks[user].findIndex(t => t.name === id) : parseInt(id)-1;
+        if (index >= 0 && tasks[user][index]) {
+          const desc = prompt("Add description:");
+          tasks[user][index].desc = desc;
+          log("Assigned description to task.");
+        } else log("Task not found.");
+      }
+      else if (cmd === "list") listTasks();
+      else if (cmd === "fin") {
+        const id = prompt("Which task to delete? (name or number):");
+        let index = isNaN(id) ? tasks[user].findIndex(t => t.name === id) : parseInt(id)-1;
+        if (index >= 0 && tasks[user][index]) {
+          const removed = tasks[user].splice(index, 1);
+          log(`Removed: ${removed[0].name}`);
+        } else log("Task not found.");
+      }
+      else if (cmd === "coords") await getCoords();
+      else if (cmd === "commands") showCommands();
+      else if (cmd === "new_user") {
+        const uname = prompt("New user name:");
+        if (!tasks[uname]) tasks[uname] = [];
+        user = uname;
+        log("Switched to new user.");
+      }
+      else if (cmd === "user") {
+        const uname = prompt("Switch to user:");
+        if (tasks[uname]) {
+          user = uname;
+          log(`Switched to ${uname}`);
+        } else log("User not found.");
+      }
+      else log("Unknown command. Type 'commands' to see available commands.");
+    });
+  </script>
+</body>
+</html>
