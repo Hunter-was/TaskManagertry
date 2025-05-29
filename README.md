@@ -1,3 +1,5 @@
+hello!
+
 import datetime
 import calendar
 import json
@@ -231,6 +233,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
-hello!
