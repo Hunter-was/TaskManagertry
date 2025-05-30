@@ -149,8 +149,8 @@
       return tasks.map((t, i) => {
         const due = new Date(t.due);
         const time = t.time ? ` at ${t.time}` : '';
-        const desc = t.desc || 'none';
         const eta = t.eta ? ` (ETA: ${t.eta})` : '';
+        const desc = t.desc || 'none';
         return `${i + 1}. ${t.name} ${formatDate(due)}${time} (${timeLeftString(due)}) - Description: ${desc}${eta}`;
       }).join('\n');
     }
