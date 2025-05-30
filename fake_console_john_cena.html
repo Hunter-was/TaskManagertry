@@ -1,0 +1,117 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Fake Console</title>
+  <style>
+    body {
+      background-color: black;
+      color: white;
+      font-family: monospace;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+    }
+    #console {
+      width: 100%;
+      height: 100vh;
+      padding: 10px;
+      box-sizing: border-box;
+      overflow-y: auto;
+      white-space: pre-wrap;
+    }
+    #jonathanImage {
+      display: none;
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      max-width: 150px;
+      z-index: 9999;
+      opacity: 0;
+      transition: opacity 1s;
+    }
+  </style>
+</head>
+<body>
+  <div id="console" tabindex="0"></div>
+  <img id="jonathanImage" src="John_Cena_2.webp" />
+  <audio id="jonathanAudio" src="and-his-name-is-john-cena-1.mp3"></audio>
+  <script>
+    const consoleEl = document.getElementById('console');
+    const jonathanImg = document.getElementById('jonathanImage');
+    const jonathanAudio = document.getElementById('jonathanAudio');
+
+    let commandHistory = [];
+    let currentInput = '';
+    let isInputEnabled = true;
+
+    function print(text) {
+      const span = document.createElement('div');
+      span.textContent = text;
+      consoleEl.appendChild(span);
+      scrollToBottom();
+    }
+
+    function scrollToBottom() {
+      consoleEl.scrollTop = consoleEl.scrollHeight;
+    }
+
+    function handleCommand(line) {
+      commandHistory.push(line);
+      print("execute: " + line);
+
+      if (line.toLowerCase() === "jonathan cena") {
+        jonathanImg.style.display = "block";
+        jonathanImg.style.opacity = "1";
+        jonathanAudio.currentTime = 0;
+        jonathanAudio.play();
+        print("You can't see him.");
+
+        setTimeout(() => {
+          jonathanImg.style.opacity = "0";
+        }, 6000); // Start fade out at 6 seconds
+
+        setTimeout(() => {
+          jonathanImg.style.display = "none";
+          jonathanAudio.pause();
+          jonathanAudio.currentTime = 0;
+        }, 7000); // Hide completely at 7 seconds
+        return;
+      }
+
+      // Default response for other commands
+      print("Unknown command: " + line);
+    }
+
+    function newPrompt() {
+      print("execute: ");
+      currentInput = '';
+    }
+
+    document.addEventListener('keydown', function(e) {
+      if (!isInputEnabled) return;
+
+      if (e.key === "Enter") {
+        e.preventDefault();
+        handleCommand(currentInput.trim());
+        currentInput = '';
+      } else if (e.key === "Backspace") {
+        e.preventDefault();
+        if (currentInput.length > 0) {
+          currentInput = currentInput.slice(0, -1);
+        }
+      } else if (e.key.length === 1) {
+        currentInput += e.key;
+      }
+
+      const lines = consoleEl.querySelectorAll("div");
+      if (lines.length > 0) {
+        lines[lines.length - 1].textContent = "execute: " + currentInput;
+      }
+    });
+
+    print("execute: ");
+  </script>
+</body>
+</html>
