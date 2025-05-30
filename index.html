@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Task Manager Console</title>
   <style>
     body {
@@ -10,13 +10,11 @@
       color: #0f0;
       font-family: monospace;
       padding: 10px;
-      margin: 0;
     }
     #console {
       white-space: pre-wrap;
       min-height: 300px;
-      max-height: 80vh;
-      overflow-y: auto;
+      transition: opacity 0.5s;
     }
     input {
       background: #000;
@@ -40,30 +38,27 @@
       color: black;
       background: white;
     }
-    #cenaImg {
+    #jcena {
+      display: none;
       position: fixed;
-      top: 10px;
-      right: 10px;
-      width: 200px;
-      opacity: 0;
-      transition: opacity 1s ease-in-out;
-      z-index: 9999;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 1000;
+      width: 50vw;
     }
   </style>
 </head>
 <body>
   <div id="console">User: </div>
   <input id="input" type="text" autofocus />
-  <img id="cenaImg" src="john_cena.webp" alt="John Cena" />
-
-  <audio id="cenaSound" src="john_cena.mp3"></audio>
+  <img id="jcena" src="https://media.tenor.com/W4FafIm9E0gAAAAd/john-cena.gif" />
+  <audio id="jcena-audio" src="https://www.myinstants.com/media/sounds/john-cena-intro.mp3"></audio>
 
   <script>
     const consoleEl = document.getElementById('console');
     const inputEl = document.getElementById('input');
     const body = document.body;
-    const cenaImg = document.getElementById('cenaImg');
-    const cenaSound = document.getElementById('cenaSound');
 
     let users = {};
     let currentUser = null;
@@ -85,7 +80,7 @@
       } else {
         consoleEl.textContent += '\n' + msg;
       }
-      consoleEl.scrollTop = consoleEl.scrollHeight;
+      window.scrollTo(0, document.body.scrollHeight);
     }
 
     function prompt(text) {
@@ -124,92 +119,132 @@
     }
 
     function getLocation() {
-      if (!navigator.geolocation) return print("Geolocation not supported.");
+      if (!navigator.geolocation) {
+        print("Geolocation not supported by your browser.");
+        return;
+      }
+
       navigator.geolocation.getCurrentPosition(pos => {
-        const lat = pos.coords.latitude.toFixed(6);
-        const lon = pos.coords.longitude.toFixed(6);
+        const lat = pos.coords.latitude.toFixed(10);
+        const lon = pos.coords.longitude.toFixed(10);
         print(`Latitude: ${lat}, Longitude: ${lon}`);
+
+        fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`)
+          .then(res => res.json())
+          .then(data => {
+            const a = data.address;
+            const formatted = `${a.attraction || a.park || a.building || a.neighbourhood || a.suburb || ""} ${a.house_number || ""} ${a.road || ""} ${a.postcode || ""} ${a.state_code || ""} ${a.state || ""} ${a.country || ""}`.trim().replace(/\s+/g, ' ');
+            print(`Address: ${formatted}`);
+          })
+          .catch(() => print("Error retrieving address."));
       }, () => {
-        print("Unable to retrieve location.");
+        print("Unable to retrieve your location.");
       });
     }
 
     function showCommands() {
-      const cmds = [
-        "add - Add new task",
-        "list - List tasks",
-        "fin - Finish/delete task",
-        "color - Add description",
-        "coords - Get coordinates",
+      const commands = [
+        "add - Add a new task",
+        "color - Assign a description to a task",
+        "commands - List available commands",
+        "coords - Show current coordinates",
         "date - Show today's date",
-        "time - Add time to task",
-        "commands - Show commands",
-        "new_user - Create new user",
-        "user - Switch user",
-        "jonathan cena - Activate surprise",
-        "/pee /kill /revive /egg /cubo - Color themes",
-        "/fletcher - Activate Fletcher mode"
+        "eta - Add estimated time to complete a task",
+        "fin - Finish/delete a task",
+        "list - List all tasks",
+        "new_user - Create and switch to a new user",
+        "nvm - Cancel any current execution",
+        "time - Add time to a task",
+        "user - Switch to existing user",
+        "/pee - Turn text yellow (pee on console)",
+        "/kill - Turn text red (simulate shutdown)",
+        "/revive - Turn text green (revive console)",
+        "/cubo - Turn text sienna (like my cat cubo!)",
+        "/egg - Turn text ivory (it's Egging time!)",
+        "/fletcher - Toggle black & white alternating mode (like my dog fletcher!)",
+        "/jonathan_cena - Surprise effect with music"
       ];
-      print("\nCommands:\n" + cmds.join("\n"));
+      print("\nAvailable Commands:\n" + commands.join("\n"));
     }
 
-    function triggerCena() {
-      cenaImg.style.opacity = 1;
-      cenaSound.play();
-      setTimeout(() => {
-        cenaImg.style.opacity = 0;
-        cenaSound.pause();
-        cenaSound.currentTime = 0;
-      }, 7000);
+    function resetStyles() {
+      fletcherMode = false;
+      body.classList.remove('fletcher');
+      body.style.color = "#0f0";
+      inputEl.style.color = "#0f0";
+      document.getElementById('jcena').style.display = 'none';
+      const audio = document.getElementById('jcena-audio');
+      audio.pause();
+      audio.currentTime = 0;
+      consoleEl.style.opacity = 1;
     }
 
     function handleCommand(line) {
-      const cmd = line.trim().toLowerCase();
+      const command = line.trim();
 
-      if (cmd === "date") print("Today is " + formatDate(new Date()));
-      else if (cmd === "add") {
-        prompt("New task name:");
-        step = 'add_name';
-        state = {};
-      } else if (cmd === "list") {
-        print(getTaskList());
-      } else if (cmd === "fin") {
-        prompt("Task to remove? (number):");
-        step = 'delete_task';
-      } else if (cmd === "color") {
-        prompt("Which task? (number):");
-        step = 'color_task';
-      } else if (cmd === "coords") {
-        getLocation();
-      } else if (cmd === "commands") {
-        showCommands();
-      } else if (cmd === "jonathan cena") {
-        print("🎺 AND HIS NAME IS...");
-        triggerCena();
-      } else if (cmd === "/pee") {
-        body.style.color = "yellow"; inputEl.style.color = "yellow"; fletcherMode = false;
-      } else if (cmd === "/kill") {
-        body.style.color = "red"; inputEl.style.color = "red"; fletcherMode = false;
-      } else if (cmd === "/revive") {
-        body.style.color = "#0f0"; inputEl.style.color = "#0f0"; fletcherMode = false;
-      } else if (cmd === "/cubo") {
-        body.style.color = "sienna"; inputEl.style.color = "sienna"; fletcherMode = false;
-      } else if (cmd === "/egg") {
-        body.style.color = "ivory"; inputEl.style.color = "ivory"; fletcherMode = false;
-      } else if (cmd === "/fletcher") {
-        fletcherMode = true; body.classList.add('fletcher');
-        print("FLETCHER MODE activated.");
-      } else if (cmd === "new_user") {
-        prompt("New user name:");
-        step = 'new_user';
-      } else if (cmd === "user") {
-        prompt("Switch to user:");
-        step = 'switch_user';
-      } else if (cmd === "time") {
-        prompt("Which task? (number):");
-        step = 'time_task';
-      } else {
-        print("Unknown command. Type 'commands' for help.");
+      switch (command) {
+        case "date":
+          print("Current date: " + formatDate(new Date()));
+          break;
+        case "add":
+          prompt("New task name:");
+          step = 'add_name';
+          state = { name: '' };
+          break;
+        case "list":
+          print(getTaskList());
+          break;
+        case "fin":
+          prompt("Which task to delete? (name or number):");
+          step = 'delete_task';
+          break;
+        case "color":
+          prompt("Which task? (name or number):");
+          step = 'color_task';
+          break;
+        case "coords":
+          print("Getting location...");
+          getLocation();
+          break;
+        case "commands":
+          showCommands();
+          break;
+        case "new_user":
+          prompt("New user name:");
+          step = 'new_user';
+          break;
+        case "user":
+          prompt("Switch to user:");
+          step = 'switch_user';
+          break;
+        case "time":
+          prompt("For which task? (name or number):");
+          step = 'time_task';
+          break;
+        case "nvm":
+          step = 'main';
+          print("Canceled current command.");
+          break;
+        case "/pee":
+          resetStyles(); body.style.color = "yellow"; inputEl.style.color = "yellow"; print("Console is now yellow."); break;
+        case "/kill":
+          resetStyles(); body.style.color = "red"; inputEl.style.color = "red"; print("Console is now red."); break;
+        case "/cubo":
+          resetStyles(); body.style.color = "sienna"; inputEl.style.color = "sienna"; print("Console is now sienna."); break;
+        case "/egg":
+          resetStyles(); body.style.color = "ivory"; inputEl.style.color = "ivory"; print("Console is now ivory."); break;
+        case "/revive":
+          resetStyles(); print("Console revived."); break;
+        case "/fletcher":
+          resetStyles(); fletcherMode = true; body.classList.add('fletcher'); print("FLETCHER MODE activated."); break;
+        case "/jonathan_cena":
+          document.getElementById('jcena').style.display = 'block';
+          document.getElementById('jcena-audio').play();
+          consoleEl.style.opacity = 0.3;
+          print("🎺 JOHN CENA!!! 🎺");
+          break;
+        default:
+          print("Unknown command. Type 'commands' to see options.");
       }
     }
 
@@ -228,62 +263,24 @@
           handleCommand(val);
         } else if (step === 'add_name') {
           state.name = val;
-          prompt("Due date (MM/DD/YYYY):");
+          prompt("Due date? (MM/DD/YYYY):");
           step = 'add_due';
         } else if (step === 'add_due') {
           const due = new Date(val);
           if (isNaN(due)) return print("Invalid date.");
-          users[currentUser].tasks.push({ name: state.name, due });
+          users[currentUser].tasks.push({ name: state.name, due: due });
           print(`Added task '${state.name}' due ${formatDate(due)}`);
           step = 'main';
         } else if (step === 'delete_task') {
-          const idx = parseInt(val) - 1;
-          const removed = users[currentUser].tasks.splice(idx, 1);
-          print(removed.length ? `Removed: ${removed[0].name}` : "Invalid task.");
-          step = 'main';
-        } else if (step === 'color_task') {
-          state.taskIndex = parseInt(val) - 1;
-          prompt("Add description:");
-          step = 'color_desc';
-        } else if (step === 'color_desc') {
-          if (users[currentUser].tasks[state.taskIndex]) {
-            users[currentUser].tasks[state.taskIndex].desc = val;
-            print("Description added.");
+          const idx = parseInt(val)-1;
+          if (users[currentUser].tasks[idx]) {
+            const task = users[currentUser].tasks.splice(idx, 1)[0];
+            print(`Removed: ${task.name}`);
           } else {
             print("Task not found.");
           }
           step = 'main';
-        } else if (step === 'new_user') {
-          if (users[val]) print("User already exists.");
-          else {
-            users[val] = { tasks: [] };
-            currentUser = val;
-            print(`Switched to ${val}`);
-          }
-          step = 'main';
-        } else if (step === 'switch_user') {
-          if (users[val]) {
-            currentUser = val;
-            print(`Switched to ${val}`);
-          } else {
-            print("User not found.");
-          }
-          step = 'main';
-        } else if (step === 'time_task') {
-          state.taskIndex = parseInt(val) - 1;
-          prompt("What time? (e.g. 3:00 PM):");
-          step = 'time_set';
-        } else if (step === 'time_set') {
-          if (users[currentUser].tasks[state.taskIndex]) {
-            users[currentUser].tasks[state.taskIndex].time = val;
-            print("Time added.");
-          } else {
-            print("Invalid task.");
-          }
-          step = 'main';
-        }
-      }
-    });
-  </script>
-</body>
-</html>
+        } else if (step === 'color_task') {
+          state.taskIndex = parseInt(val)-1;
+          prompt("Add description:");
+          step = 'color_desc';_
