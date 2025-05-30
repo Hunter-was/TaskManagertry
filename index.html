@@ -331,13 +331,13 @@ function showBiden() {
         inputEl.style.color = 'yellow';
         document.body.classList.remove('fletcher');
         fletcherMode = false;
-        print("Console is now yellow.");
+        print("Console is now - uh ... yellow.");
       } else if (command === '/kill') {
         document.body.style.color = 'red';
         inputEl.style.color = 'red';
         document.body.classList.remove('fletcher');
         fletcherMode = false;
-        print("Console is now red.");
+        print("Console was brutally murdered. Console is now red.");
       } else if (command === '/cubo') {
         document.body.style.color = 'sienna';
         inputEl.style.color = 'sienna';
@@ -349,7 +349,7 @@ function showBiden() {
         inputEl.style.color = 'ivory';
         document.body.classList.remove('fletcher');
         fletcherMode = false;
-        print("Console is now ivory.");
+        print("Console is now egg-color.");
       } else if (command === '/fletcher') {
         document.body.classList.add('fletcher');
         fletcherMode = true;
@@ -364,7 +364,7 @@ function showBiden() {
         showCena();
         } else if (line.toLowerCase() === 'biden') {
   showBiden();
-        } else if (input.trim().toLowerCase() === "gru") {
+        if (input.trim().toLowerCase() === "gru") {
   playGruEasterEgg();
   return;
 }
