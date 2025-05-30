@@ -229,6 +229,34 @@ function showBiden() {
   }, 7000);
 }
 
+    function playGruEasterEgg() {
+  const container = document.getElementById("easter-egg-container");
+  const img = document.getElementById("easter-egg-image");
+  const audio = document.getElementById("easter-egg-audio");
+
+  img.src = "media/Gru_with_his_freeze_ray.webp";
+  audio.src = "media/gruaudio.mp3";
+  audio.play();
+
+  container.style.display = "flex";
+  container.style.opacity = "0";
+
+  // Fade in
+  setTimeout(() => {
+    container.style.opacity = "1";
+  }, 50);
+
+  // Fade out after 6 seconds, hide at 7
+  setTimeout(() => {
+    container.style.opacity = "0";
+  }, 6000);
+
+  setTimeout(() => {
+    container.style.display = "none";
+    audio.pause();
+    audio.currentTime = 0;
+  }, 7000);
+}
 
     function parseNaturalDate(input) {
       const today = new Date();
@@ -336,6 +364,10 @@ function showBiden() {
         showCena();
         } else if (line.toLowerCase() === 'biden') {
   showBiden();
+        if (input.trim().toLowerCase() === "gru") {
+  playGruEasterEgg();
+  return;
+}
       } else {
         print("Unknown command.");
       }
