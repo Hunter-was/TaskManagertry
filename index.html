@@ -55,6 +55,10 @@
       return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     }
 
+    function getDayName(date) {
+      return "(" + date.toLocaleDateString(undefined, { weekday: 'long' }) + ")";
+    }
+
     function timeLeftString(futureDate) {
       const now = new Date();
       const diff = futureDate - now;
@@ -64,9 +68,9 @@
       const hours = Math.floor(diff / (1000 * 60 * 60));
       const days = Math.floor(diff / (1000 * 60 * 60 * 24));
 
-      if (mins < 60) return `${mins} minutes left`;
-      else if (hours < 24) return `${hours} hours left`;
-      else return `${days} days left`;
+      if (days >= 1) return `${days} days left`;
+      if (hours >= 1) return `${hours} hours left`;
+      return `${mins} minutes left`;
     }
 
     function getTaskList() {
@@ -74,12 +78,25 @@
       if (!tasks.length) return 'No tasks to show.';
 
       const sorted = tasks.slice().sort((a, b) => new Date(a.due) - new Date(b.due));
+
       return sorted.map((t, i) => {
         const due = new Date(t.due);
         const time = t.time ? ` at ${t.time}` : '';
         const desc = t.desc || 'none';
-        return `${i+1}. ${t.name} ${formatDate(due)}${time} (${timeLeftString(due)}) - Description: ${desc}`;
+
+        let weekday = '';
+        const now = new Date();
+        const diffDays = Math.floor((due - now) / (1000 * 60 * 60 * 24));
+        if (diffDays >= 0 && diffDays < 7) {
+          weekday = " " + getDayName(due);
+        }
+
+        return `${i+1}. ${t.name} ${formatDate(due)}${weekday}${time} (${timeLeftString(due)}) - Description: ${desc}`;
       }).join('\n');
+    }
+
+    function normalizeTime(input) {
+      return input.toUpperCase().replace(/\./g, '').replace(/\s+/g, '');
     }
 
     function getLocation() {
@@ -92,27 +109,6 @@
         const lat = pos.coords.latitude.toFixed(10);
         const lon = pos.coords.longitude.toFixed(10);
         print(`Latitude: ${lat}, Longitude: ${lon}`);
-
-        fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`)
-          .then(res => res.json())
-          .then(data => {
-            const address = data.address;
-            const placename = address.attraction || address.park || address.building || address.neighbourhood || address.suburb || "";
-            const road = address.road || "";
-            const house_number = address.house_number || "";
-            const city = address.city || address.town || address.village || "";
-            const state = address.state || "";
-            const postcode = address.postcode || "";
-            const country = address.country || "";
-            const state_code = address.state_code || "";
-
-            const formatted = `${placename} ${house_number} ${road} ${postcode} ${state_code} ${state} ${country}`.trim().replace(/\s+/g, ' ');
-            print(`Address: ${formatted}`);
-          })
-          .catch(err => {
-            print("Error retrieving address.");
-            console.error(err);
-          });
       }, () => {
         print("Unable to retrieve your location.");
       });
@@ -128,62 +124,22 @@
         "fin - Finish/delete a task",
         "list - List all tasks",
         "new_user - Create and switch to a new user",
-        "user - Switch to existing user",
+        "repeat - Make a task repeat",
         "time - Add time to a task",
-        "nvm - Cancel current operation",
-        "/pee - Turn text yellow",
+        "user - Switch to existing user",
+        "dow - Show the day of the week for a task/date",
+        "nvm - Cancel current action",
         "/kill - Turn text red",
         "/revive - Turn text green",
         "/cubo - Turn text sienna",
         "/egg - Turn text ivory",
-        "/fletcher - Alternate text black & white"
+        "/fletcher - Black and white alternating"
       ];
       print("\nAvailable Commands:\n" + commands.join("\n"));
     }
 
-    function parseDate(val) {
-      const today = new Date();
-      const weekdays = {
-        "sun": 0, "sunday": 0, "su": 0,
-        "mon": 1, "monday": 1, "m": 1,
-        "tue": 2, "tuesday": 2, "t": 2,
-        "wed": 3, "wednesday": 3, "w": 3,
-        "thu": 4, "thur": 4, "thursday": 4, "th": 4,
-        "fri": 5, "friday": 5, "f": 5,
-        "sat": 6, "saturday": 6, "s": 6
-      };
-
-      val = val.toLowerCase().trim();
-
-      if (val === "today") return today;
-      if (val === "tomorrow") {
-        const tomorrow = new Date();
-        tomorrow.setDate(today.getDate() + 1);
-        return tomorrow;
-      }
-
-      if (weekdays.hasOwnProperty(val)) {
-        const targetDay = weekdays[val];
-        const currentDay = today.getDay();
-        let offset = (targetDay - currentDay + 7) % 7;
-        if (offset === 0) offset = 7;
-        const result = new Date();
-        result.setDate(today.getDate() + offset);
-        return result;
-      }
-
-      const parsed = new Date(val);
-      return isNaN(parsed) ? null : parsed;
-    }
-
     function handleCommand(line) {
       const [command, ...rest] = line.trim().split(" ");
-
-      if (command === "nvm") {
-        print("Cancelled. Back to main.");
-        step = 'main';
-        return;
-      }
 
       if (command === "date") {
         print("Current date: " + formatDate(new Date()));
@@ -204,6 +160,32 @@
         getLocation();
       } else if (command === "commands") {
         showCommands();
+      } else if (command === "/kill") {
+        document.body.style.color = "#f00";
+        inputEl.style.color = "#f00";
+        inputEl.style.backgroundColor = "#000";
+        print("Console killed. Text is now red.");
+      } else if (command === "/revive") {
+        document.body.style.color = "#0f0";
+        inputEl.style.color = "#0f0";
+        inputEl.style.backgroundColor = "#000";
+        print("Console revived. Text is now green.");
+      } else if (command === "/cubo") {
+        document.body.style.color = "sienna";
+        inputEl.style.color = "sienna";
+        inputEl.style.backgroundColor = "#000";
+        print("Console is now sienna.");
+      } else if (command === "/egg") {
+        document.body.style.color = "ivory";
+        inputEl.style.color = "ivory";
+        inputEl.style.backgroundColor = "#000";
+        print("Console is now egg-colored.");
+      } else if (command === "/fletcher") {
+        document.body.style.color = "#000";
+        inputEl.style.color = "#000";
+        inputEl.style.backgroundColor = "#fff";
+        document.body.style.backgroundColor = "#fff";
+        print("Console is now alternating white/black.");
       } else if (command === "new_user") {
         prompt("New user name:");
         step = 'new_user';
@@ -213,34 +195,15 @@
       } else if (command === "time") {
         prompt("For which task? (name or number):");
         step = 'time_task';
-      } else if (command === "/pee") {
-        document.body.style.color = "yellow";
-        inputEl.style.color = "yellow";
-        print("Console is now... uh, yellow.");
-      } else if (command === "/kill") {
-        document.body.style.color = "#f00";
-        inputEl.style.color = "#f00";
-        print("Console killed. Text is now red.");
-      } else if (command === "/revive") {
-        document.body.style.color = "#0f0";
-        inputEl.style.color = "#0f0";
-        print("Console revived. Text is now green.");
-      } else if (command === "/cubo") {
-        document.body.style.color = "sienna";
-        inputEl.style.color = "sienna";
-        print("Console colored sienna.");
-      } else if (command === "/egg") {
-        document.body.style.color = "ivory";
-        inputEl.style.color = "ivory";
-        print("Console is now egg-colored.");
-      } else if (command === "/fletcher") {
-        document.body.style.backgroundColor = "#000";
-        consoleEl.innerHTML = consoleEl.textContent
-          .split("")
-          .map((c, i) =>
-            `<span style="color:${i%2===0?'white':'black'};background-color:${i%2===0?'black':'white'}">${c}</span>`
-          ).join("");
-        print("Console is now... fletched.");
+      } else if (command === "dow") {
+        prompt("Enter date (MM/DD/YYYY) or task number:");
+        step = 'dow_input';
+      } else if (command === "nvm") {
+        step = 'main';
+        print("Canceled current operation.");
+      } else if (command === "repeat") {
+        prompt("Which task to repeat? (name or number):");
+        step = 'repeat_which';
       } else {
         print("Unknown command. Type 'commands' to see options.");
       }
@@ -252,11 +215,6 @@
         consoleEl.textContent += `\nexecute: ${val}`;
         inputEl.value = '';
 
-        if (val === 'nvm') {
-          handleCommand(val);
-          return;
-        }
-
         if (step === 'user') {
           currentUser = val;
           if (!users[currentUser]) users[currentUser] = { tasks: [] };
@@ -266,13 +224,13 @@
           handleCommand(val);
         } else if (step === 'add_name') {
           state.name = val;
-          prompt("Due date? (MM/DD/YYYY, today, tomorrow, or day):");
+          prompt("Due date? (MM/DD/YYYY, today, tomorrow, or weekday):");
           step = 'add_due';
         } else if (step === 'add_due') {
-          const due = parseDate(val);
+          let due = parseDueDate(val);
           if (!due) return print("Invalid date.");
           users[currentUser].tasks.push({ name: state.name, due: due });
-          print(`Added task '${state.name}' due ${formatDate(due)}`);
+          print(`Added task '${state.name}' due ${formatDate(due)} (Friday)`);
           step = 'main';
         } else if (step === 'delete_task') {
           const idx = parseInt(val)-1;
@@ -317,15 +275,92 @@
           step = 'time_set';
         } else if (step === 'time_set') {
           if (users[currentUser].tasks[state.taskIndex]) {
-            users[currentUser].tasks[state.taskIndex].time = val;
+            users[currentUser].tasks[state.taskIndex].time = normalizeTime(val);
             print("Time added.");
           } else {
             print("Task not found.");
           }
           step = 'main';
+        } else if (step === 'dow_input') {
+          let date;
+          if (!isNaN(val)) {
+            const task = users[currentUser].tasks[parseInt(val)-1];
+            if (!task) return print("Task not found.");
+            date = new Date(task.due);
+          } else {
+            date = new Date(val);
+          }
+          if (isNaN(date)) return print("Invalid date.");
+          print("That day is a " + date.toLocaleDateString(undefined, { weekday: 'long' }));
+          step = 'main';
+        } else if (step === 'repeat_which') {
+          state.taskIndex = isNaN(val) ? users[currentUser].tasks.findIndex(t => t.name === val) : parseInt(val)-1;
+          if (state.taskIndex < 0 || !users[currentUser].tasks[state.taskIndex]) {
+            print("Task not found.");
+            step = 'main';
+          } else {
+            prompt("Repeat how? (daily at [time], every [n] days at [time], weekly at [time], every other day at [time]):");
+            step = 'repeat_how';
+          }
+        } else if (step === 'repeat_how') {
+          const input = val.toLowerCase();
+          const task = users[currentUser].tasks[state.taskIndex];
+          if (input.startsWith("daily at")) {
+            const time = input.split("at")[1].trim();
+            task.repeat = { type: "daily", time };
+            print("Set to repeat daily at " + time);
+          } else if (input.startsWith("every other day at")) {
+            const time = input.split("at")[1].trim();
+            task.repeat = { type: "every_other_day", time };
+            print("Set to repeat every other day at " + time);
+          } else if (input.startsWith("every") && input.includes("days at")) {
+            const parts = input.split(" ");
+            const interval = parseInt(parts[1]);
+            const time = input.split("at")[1].trim();
+            task.repeat = { type: "every_n_days", interval, time };
+            print(`Set to repeat every ${interval} days at ${time}`);
+          } else if (input.startsWith("weekly at")) {
+            const time = input.split("at")[1].trim();
+            task.repeat = { type: "weekly", time };
+            print("Set to repeat weekly at " + time);
+          } else {
+            print("Invalid repeat format.");
+          }
+          step = 'main';
         }
       }
     });
+
+    function parseDueDate(input) {
+      input = input.toLowerCase();
+      const now = new Date();
+      if (input === "today") return now;
+      if (input === "tomorrow") {
+        now.setDate(now.getDate() + 1);
+        return now;
+      }
+
+      const days = {
+        sunday: 0, sun: 0, su: 0,
+        monday: 1, mon: 1, m: 1,
+        tuesday: 2, tue: 2, t: 2,
+        wednesday: 3, wed: 3, w: 3,
+        thursday: 4, thur: 4, th: 4,
+        friday: 5, fri: 5, f: 5,
+        saturday: 6, sat: 6, sa: 6
+      };
+
+      if (days[input] !== undefined) {
+        const targetDay = days[input];
+        const day = now.getDay();
+        const diff = (targetDay - day + 7) % 7 || 7;
+        now.setDate(now.getDate() + diff);
+        return now;
+      }
+
+      const parsed = new Date(input);
+      return isNaN(parsed) ? null : parsed;
+    }
   </script>
 </body>
 </html>
