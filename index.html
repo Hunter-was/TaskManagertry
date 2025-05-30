@@ -260,6 +260,11 @@ function showBiden() {
     }
 
     function handleCommand(line) {
+      if (input.trim().toLowerCase() === 'playground') {
+  printToConsole("❌ Sorry, that word is not allowed.");
+  return;
+}
+
       const [command, ...args] = line.trim().split(" ");
       if (command.toLowerCase() === 'nvm') {
         step = 'main';
