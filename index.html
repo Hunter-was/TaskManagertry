@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Task Manager Console</title>
   <style>
     body {
@@ -10,6 +10,7 @@
       color: #0f0;
       font-family: monospace;
       padding: 10px;
+      margin: 0;
     }
     #console {
       white-space: pre-wrap;
@@ -37,152 +38,291 @@
       color: black;
       background: white;
     }
-    #jcena {
+    #cena-img {
       position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      max-width: 80%;
-      max-height: 80%;
+      top: 10px;
+      right: 10px;
+      max-width: 200px;
       opacity: 0;
-      transition: opacity 1s ease-in-out;
+      transition: opacity 1s ease;
       z-index: 9999;
-      pointer-events: none;
     }
   </style>
 </head>
 <body>
+  <img id="cena-img" src="John_Cena_2.webp" style="display:none;">
   <div id="console">User: </div>
   <input id="input" type="text" autofocus />
-  <img id="jcena" src="and-his-name-is-john-cena.gif" alt="John Cena" />
-  <audio id="jcena-audio" src="and-his-name-is-john-cena-1.mp3"></audio>
+  <audio id="cena-sound" src="and-his-name-is-john-cena-1.mp3"></audio>
 
   <script>
-    window.onload = function () {
-      const consoleEl = document.getElementById('console');
-      const inputEl = document.getElementById('input');
-      const body = document.body;
+    const consoleEl = document.getElementById('console');
+    const inputEl = document.getElementById('input');
+    const cenaImg = document.getElementById('cena-img');
+    const cenaSound = document.getElementById('cena-sound');
+    const body = document.body;
 
-      const cenaImg = document.getElementById('jcena');
-      const cenaAudio = document.getElementById('jcena-audio');
+    let users = {};
+    let currentUser = null;
+    let step = 'user';
+    let state = {};
+    let fletcherMode = false;
 
-      let users = {};
-      let currentUser = null;
-      let step = 'user';
-      let state = {};
-      let fletcherMode = false;
+    function applyFletcherText(text) {
+      return text.split('').map((char, i) => {
+        const cls = i % 2 === 0 ? 'alt1' : 'alt2';
+        return `<span class="${cls}">${char}</span>`;
+      }).join('');
+    }
 
-      function print(msg = '') {
-        if (fletcherMode) {
-          const html = msg.split('').map((char, i) => {
-            const cls = i % 2 === 0 ? 'alt1' : 'alt2';
-            return `<span class="${cls}">${char}</span>`;
-          }).join('');
-          consoleEl.innerHTML += html + '<br>';
-        } else {
-          consoleEl.textContent += '\n' + msg;
-        }
-        window.scrollTo(0, document.body.scrollHeight);
+    function print(msg = '') {
+      if (fletcherMode) {
+        consoleEl.innerHTML += applyFletcherText(msg + '\n');
+      } else {
+        consoleEl.textContent += '\n' + msg;
       }
+      window.scrollTo(0, document.body.scrollHeight);
+    }
 
-      function prompt(text) {
-        print(text);
+    function prompt(text) {
+      print(text);
+    }
+
+    function formatDate(date) {
+      return `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()}`;
+    }
+
+    function timeLeftString(futureDate) {
+      const now = new Date();
+      const diff = futureDate - now;
+      if (diff <= 0) return 'due';
+      const mins = Math.floor(diff / (1000 * 60));
+      const hours = Math.floor(diff / (1000 * 60 * 60));
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+      if (mins < 60) return `${mins} minutes left`;
+      else if (hours < 24) return `${hours} hours left`;
+      else return `${days} days left`;
+    }
+
+    function getTaskList() {
+      const tasks = users[currentUser].tasks;
+      if (!tasks.length) return 'No tasks to show.';
+      return tasks.map((t, i) => {
+        const due = new Date(t.due);
+        const time = t.time ? ` at ${t.time}` : '';
+        const desc = t.desc || 'none';
+        const eta = t.eta ? ` (ETA: ${t.eta})` : '';
+        return `${i + 1}. ${t.name} ${formatDate(due)}${time} (${timeLeftString(due)}) - Description: ${desc}${eta}`;
+      }).join('\n');
+    }
+
+    function getLocation() {
+      if (!navigator.geolocation) return print("Geolocation not supported.");
+      navigator.geolocation.getCurrentPosition(pos => {
+        const lat = pos.coords.latitude.toFixed(5);
+        const lon = pos.coords.longitude.toFixed(5);
+        print(`Latitude: ${lat}, Longitude: ${lon}`);
+      }, () => print("Location unavailable."));
+    }
+
+    function showCommands() {
+      const commands = [
+        "add - Add a new task",
+        "color - Assign a description to a task",
+        "commands - List available commands",
+        "coords - Show current coordinates",
+        "date - Show today's date",
+        "eta - Adds an estimated time that the task will take",
+        "fin - Finish/delete a task",
+        "list - List all tasks",
+        "new_user - Create and switch to a new user",
+        "nvm - Cancels any current execution",
+        "time - Add time to a task",
+        "user - Switch to existing user",
+        "/pee - Turn text yellow (pee on console)",
+        "/kill - Turn text red (simulate shutdown)",
+        "/revive - Turn text green (revive console)",
+        "/cubo - Turn text sienna (like my cat cubo!)",
+        "/egg - Turn text white (it's Egging time!)",
+        "/fletcher - Turn text to black/white alternating (like my dog fletcher!)",
+      ];
+      print("\nAvailable Commands:\n" + commands.join("\n"));
+    }
+
+    function showCena() {
+      cenaImg.style.display = "block";
+      cenaImg.style.opacity = 1;
+      cenaSound.currentTime = 0;
+      cenaSound.play();
+      setTimeout(() => {
+        cenaImg.style.opacity = 0;
+        setTimeout(() => {
+          cenaImg.style.display = "none";
+        }, 1000);
+      }, 7000);
+    }
+
+    function handleCommand(line) {
+      const [command, ...args] = line.trim().split(" ");
+      if (command === 'nvm') {
+        step = 'main';
+        state = {};
+        print("Cancelled.");
+      } else if (command === 'date') {
+        print("Current date: " + formatDate(new Date()));
+      } else if (command === 'add') {
+        prompt("New task name:");
+        step = 'add_name';
+        state = {};
+      } else if (command === 'list') {
+        print(getTaskList());
+      } else if (command === 'fin') {
+        prompt("Task number to finish:");
+        step = 'fin_task';
+      } else if (command === 'color') {
+        prompt("Which task? (number):");
+        step = 'color_task';
+      } else if (command === 'time') {
+        prompt("Which task? (number):");
+        step = 'time_task';
+      } else if (command === 'eta') {
+        prompt("Which task? (number):");
+        step = 'eta_task';
+      } else if (command === 'coords') {
+        getLocation();
+      } else if (command === 'commands') {
+        showCommands();
+      } else if (command === 'new_user') {
+        prompt("New user name:");
+        step = 'new_user';
+      } else if (command === 'user') {
+        prompt("Switch to user:");
+        step = 'user_switch';
+      } else if (command === '/pee') {
+        document.body.style.color = 'yellow';
+        inputEl.style.color = 'yellow';
+        document.body.classList.remove('fletcher');
+        fletcherMode = false;
+        print("Console is now yellow.");
+      } else if (command === '/kill') {
+        document.body.style.color = 'red';
+        inputEl.style.color = 'red';
+        document.body.classList.remove('fletcher');
+        fletcherMode = false;
+        print("Console is now red.");
+      } else if (command === '/cubo') {
+        document.body.style.color = 'sienna';
+        inputEl.style.color = 'sienna';
+        document.body.classList.remove('fletcher');
+        fletcherMode = false;
+        print("Console is now sienna.");
+      } else if (command === '/egg') {
+        document.body.style.color = 'ivory';
+        inputEl.style.color = 'ivory';
+        document.body.classList.remove('fletcher');
+        fletcherMode = false;
+        print("Console is now ivory.");
+      } else if (command === '/fletcher') {
+        document.body.classList.add('fletcher');
+        fletcherMode = true;
+        print("FLETCHER MODE activated.");
+      } else if (command === '/revive') {
+        document.body.style.color = '#0f0';
+        inputEl.style.color = '#0f0';
+        document.body.classList.remove('fletcher');
+        fletcherMode = false;
+        print("Console revived.");
+      } else if (line.toLowerCase() === 'johnathan cena') {
+        showCena();
+      } else {
+        print("Unknown command.");
       }
+    }
 
-      function showCommands() {
-        const commands = [
-          "add - Add a new task",
-          "color - Assign a description to a task",
-          "commands - List available commands",
-          "coords - Show current coordinates",
-          "date - Show today's date",
-          "eta - Adds an estimated time the task will take",
-          "fin - Finish/delete a task",
-          "list - List all tasks",
-          "new_user - Create and switch to a new user",
-          "nvm - Cancels any current execution",
-          "time - Add time to a task",
-          "user - Switch to existing user",
-          "/pee - Turn text yellow (pee on console)",
-          "/kill - Turn text red (simulate shutdown)",
-          "/revive - Turn text green (revive console)",
-          "/cubo - Turn text sienna (like my cat cubo!)",
-          "/egg - Turn text white (it's Egging time!)",
-          "/fletcher - Turn text to be black and white (like my dog fletcher!)",
-          "jonathan cena - Surprise!"
-        ];
-        print("Available Commands:\n" + commands.join('\n'));
-      }
-
-      function handleCommand(val) {
-        const command = val.trim().toLowerCase();
-
-        if (command === 'commands') {
-          showCommands();
-        } else if (command === '/pee') {
-          body.style.color = "yellow";
-          inputEl.style.color = "yellow";
-          body.classList.remove('fletcher');
-          fletcherMode = false;
-          print("Console is now yellow.");
-        } else if (command === '/kill') {
-          body.style.color = "red";
-          inputEl.style.color = "red";
-          body.classList.remove('fletcher');
-          fletcherMode = false;
-          print("Console is now red.");
-        } else if (command === '/cubo') {
-          body.style.color = "sienna";
-          inputEl.style.color = "sienna";
-          body.classList.remove('fletcher');
-          fletcherMode = false;
-          print("Console is now sienna.");
-        } else if (command === '/egg') {
-          body.style.color = "ivory";
-          inputEl.style.color = "ivory";
-          body.classList.remove('fletcher');
-          fletcherMode = false;
-          print("Console is now ivory.");
-        } else if (command === '/fletcher') {
-          fletcherMode = true;
-          body.classList.add('fletcher');
-          print("FLETCHER MODE activated.");
-        } else if (command === '/revive') {
-          body.classList.remove('fletcher');
-          fletcherMode = false;
-          body.style.color = "#0f0";
-          inputEl.style.color = "#0f0";
-          print("Console revived and reset.");
-        } else if (command === 'jonathan cena') {
-          cenaAudio.currentTime = 0;
-          cenaAudio.play();
-          cenaImg.style.opacity = 1;
-          setTimeout(() => {
-            cenaImg.style.opacity = 0;
-          }, 4500);
-          print("🎺🎺🎺");
-        } else {
-          print("Unknown command. Type 'commands' to see options.");
-        }
-      }
-
-      inputEl.addEventListener('keydown', e => {
-        if (e.key === 'Enter') {
-          const val = inputEl.value.trim();
-          print(`execute: ${val}`);
-          inputEl.value = '';
-
-          if (step === 'user') {
-            currentUser = val;
-            if (!users[currentUser]) users[currentUser] = { tasks: [] };
-            print(`Hello ${currentUser}`);
-            step = 'main';
-          } else if (step === 'main') {
-            handleCommand(val);
+    inputEl.addEventListener('keydown', e => {
+      if (e.key === 'Enter') {
+        const val = inputEl.value.trim();
+        print(`execute: ${val}`);
+        inputEl.value = '';
+        if (step === 'user') {
+          currentUser = val;
+          if (!users[currentUser]) users[currentUser] = { tasks: [] };
+          print(`Hello ${currentUser}`);
+          step = 'main';
+        } else if (step === 'main') {
+          handleCommand(val);
+        } else if (step === 'add_name') {
+          state.name = val;
+          prompt("Due date? (MM/DD/YYYY):");
+          step = 'add_due';
+        } else if (step === 'add_due') {
+          const due = new Date(val);
+          if (isNaN(due)) return print("Invalid date.");
+          users[currentUser].tasks.push({ name: state.name, due: due });
+          print(`Added task '${state.name}' due ${formatDate(due)}`);
+          step = 'main';
+        } else if (step === 'fin_task') {
+          const idx = parseInt(val) - 1;
+          if (users[currentUser].tasks[idx]) {
+            const task = users[currentUser].tasks.splice(idx, 1)[0];
+            print(`Removed: ${task.name}`);
+          } else {
+            print("Task not found.");
           }
+          step = 'main';
+        } else if (step === 'color_task') {
+          state.taskIndex = parseInt(val) - 1;
+          prompt("Add description:");
+          step = 'color_desc';
+        } else if (step === 'color_desc') {
+          if (users[currentUser].tasks[state.taskIndex]) {
+            users[currentUser].tasks[state.taskIndex].desc = val;
+            print("Description added.");
+          } else {
+            print("Task not found.");
+          }
+          step = 'main';
+        } else if (step === 'time_task') {
+          state.taskIndex = parseInt(val) - 1;
+          prompt("What time?");
+          step = 'time_set';
+        } else if (step === 'time_set') {
+          if (users[currentUser].tasks[state.taskIndex]) {
+            users[currentUser].tasks[state.taskIndex].time = val;
+            print("Time added.");
+          } else {
+            print("Task not found.");
+          }
+          step = 'main';
+        } else if (step === 'eta_task') {
+          state.taskIndex = parseInt(val) - 1;
+          prompt("How long will it take?");
+          step = 'eta_set';
+        } else if (step === 'eta_set') {
+          if (users[currentUser].tasks[state.taskIndex]) {
+            users[currentUser].tasks[state.taskIndex].eta = val;
+            print("ETA added.");
+          } else {
+            print("Task not found.");
+          }
+          step = 'main';
+        } else if (step === 'new_user') {
+          users[val] = { tasks: [] };
+          currentUser = val;
+          print(`Created and switched to ${val}`);
+          step = 'main';
+        } else if (step === 'user_switch') {
+          if (users[val]) {
+            currentUser = val;
+            print(`Switched to ${val}`);
+          } else {
+            print("User not found.");
+          }
+          step = 'main';
         }
-      });
-    };
+      }
+    });
   </script>
 </body>
 </html>
+
