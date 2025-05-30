@@ -14,6 +14,7 @@
       height: 100vh;
       display: flex;
       flex-direction: column;
+      overflow: hidden;
     }
     #console {
       white-space: pre-wrap;
@@ -31,36 +32,46 @@
       font-family: monospace;
       width: 100%;
     }
-
-    #cena-img {
+    .cena-img {
       position: fixed;
       top: 10px;
       right: 10px;
       width: 200px;
       opacity: 0;
       transition: opacity 1s ease;
-      z-index: 999;
+      z-index: 1000;
+    }
+    .fade-in {
+      opacity: 1 !important;
     }
   </style>
 </head>
 <body>
   <div id="console">User: </div>
   <input id="input" type="text" autofocus />
-
-  <!-- John Cena media -->
-  <img id="cena-img" src="John_Cena_2.webp" alt="John Cena" />
+  <img id="cena" class="cena-img" src="John_Cena_2.webp" />
   <audio id="cena-audio" src="and-his-name-is-john-cena-1.mp3"></audio>
 
   <script>
     const consoleEl = document.getElementById('console');
     const inputEl = document.getElementById('input');
-    const cenaImg = document.getElementById("cena-img");
-    const cenaAudio = document.getElementById("cena-audio");
+    const cenaImg = document.getElementById('cena');
+    const cenaAudio = document.getElementById('cena-audio');
 
     let users = {};
     let currentUser = null;
     let step = 'user';
     let state = {};
+
+    const dayMap = {
+      "sun": 0, "sunday": 0, "su": 0,
+      "mon": 1, "monday": 1, "m": 1,
+      "tue": 2, "tuesday": 2, "t": 2,
+      "wed": 3, "wednesday": 3, "w": 3,
+      "thu": 4, "thursday": 4, "th": 4,
+      "fri": 5, "friday": 5, "f": 5,
+      "sat": 6, "saturday": 6, "sa": 6
+    };
 
     function scrollToBottom() {
       consoleEl.scrollTop = consoleEl.scrollHeight;
@@ -98,26 +109,61 @@
       else return `${days} days left`;
     }
 
+    function dayOfWeekString(date) {
+      const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+      return days[date.getDay()];
+    }
+
+    function parseNaturalDate(input) {
+      const lower = input.toLowerCase();
+      const today = new Date();
+      if (lower === "today") return today;
+      if (lower === "tomorrow") {
+        const d = new Date();
+        d.setDate(d.getDate() + 1);
+        return d;
+      }
+
+      const dayNum = dayMap[lower];
+      if (dayNum !== undefined) {
+        const d = new Date();
+        const current = d.getDay();
+        let diff = (dayNum - current + 7) % 7;
+        if (diff === 0) diff = 7;
+        d.setDate(d.getDate() + diff);
+        return d;
+      }
+
+      const parsed = new Date(input);
+      if (!isNaN(parsed)) return parsed;
+
+      return null;
+    }
+
     function getTaskList() {
       const tasks = users[currentUser].tasks;
       if (!tasks.length) return 'No tasks to show.';
+      tasks.sort((a, b) => new Date(a.due) - new Date(b.due));
 
       return tasks.map((t, i) => {
         const due = new Date(t.due);
+        const now = new Date();
+        const diff = (due - now) / (1000 * 60 * 60 * 24);
+        const dayStr = diff < 7 && diff >= 0 ? ` (${dayOfWeekString(due)})` : '';
         const time = t.time ? ` at ${t.time}` : '';
         const desc = t.desc || 'none';
-        return `${i + 1}. ${t.name} ${formatDate(due)}${time} (${timeLeftString(due)}) - Description: ${desc}`;
+        return `${i + 1}. ${t.name} ${formatDate(due)}${dayStr}${time} (${timeLeftString(due)}) - Description: ${desc}`;
       }).join('\n');
     }
 
-    function triggerJohnCena() {
-      cenaImg.style.opacity = "1";
+    function showCenaEffect() {
+      cenaImg.classList.add("fade-in");
       cenaAudio.currentTime = 0;
       cenaAudio.play();
 
       setTimeout(() => {
-        cenaImg.style.opacity = "0";
-      }, 7000); // 7 seconds
+        cenaImg.classList.remove("fade-in");
+      }, 7000);
     }
 
     function handleCommand(line) {
@@ -128,9 +174,20 @@
         prompt("New task name:");
         step = 'add_name';
         state = { name: '' };
-      } else if (command === "johnathan" && rest.join(" ") === "cena") {
-        triggerJohnCena();
-        print("🎺 AND HIS NAME IS JOHN CENA!");
+      } else if (command === "nvm") {
+        print("Cancelled.");
+        step = 'main';
+      } else if (command === "dow") {
+        const input = rest.join(" ");
+        const date = parseNaturalDate(input);
+        if (date) {
+          print(`${input} is a ${dayOfWeekString(date)}`);
+        } else {
+          print("Invalid date.");
+        }
+      } else if (line.toLowerCase() === "jonathan cena") {
+        showCenaEffect();
+        print("🎺 AND HIS NAME IS JOHN CENA!!! 🎺");
       } else {
         print("Unknown command.");
       }
@@ -152,13 +209,13 @@
           handleCommand(val);
         } else if (step === 'add_name') {
           state.name = val;
-          prompt("Due date? (MM/DD/YYYY):");
+          prompt("Due date? (MM/DD/YYYY or today, tomorrow, Monday, etc.):");
           step = 'add_due';
         } else if (step === 'add_due') {
-          const due = new Date(val);
-          if (isNaN(due)) return print("Invalid date.");
+          const due = parseNaturalDate(val);
+          if (!due) return print("Invalid date.");
           users[currentUser].tasks.push({ name: state.name, due: due });
-          print(`Added task '${state.name}' due ${formatDate(due)}`);
+          print(`Added task '${state.name}' due ${formatDate(due)} (${dayOfWeekString(due)})`);
           step = 'main';
         }
       }
