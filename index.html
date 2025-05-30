@@ -1,3 +1,6 @@
+<!-- FULL HTML: your code with only natural date input + nvm fix added -->
+<!-- COPY-PASTE THIS INTO index.html -->
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -162,13 +165,45 @@
       }, 7000);
     }
 
+    function parseNaturalDate(input) {
+      const today = new Date();
+      input = input.trim().toLowerCase();
+
+      if (input === 'today') return today;
+      if (input === 'tomorrow') return new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
+
+      const weekdays = {
+        sunday: 0, sun: 0, su: 0,
+        monday: 1, mon: 1, m: 1,
+        tuesday: 2, tue: 2, t: 2,
+        wednesday: 3, wed: 3, w: 3, wensday: 3, wednasday: 3,
+        thursday: 4, thu: 4, th: 4, thrusday: 4, thurday: 4,
+        friday: 5, fri: 5, f: 5,
+        saturday: 6, sat: 6, sa: 6,
+      };
+
+      const dayIndex = weekdays[input];
+      if (dayIndex !== undefined) {
+        const result = new Date(today);
+        const diff = (dayIndex - today.getDay() + 7) % 7 || 7;
+        result.setDate(today.getDate() + diff);
+        return result;
+      }
+
+      const parsed = new Date(input);
+      return isNaN(parsed) ? null : parsed;
+    }
+
     function handleCommand(line) {
       const [command, ...args] = line.trim().split(" ");
-      if (command === 'nvm') {
+      if (command.toLowerCase() === 'nvm') {
         step = 'main';
         state = {};
         print("Cancelled.");
-      } else if (command === 'date') {
+        return;
+      }
+
+      if (command === 'date') {
         print("Current date: " + formatDate(new Date()));
       } else if (command === 'add') {
         prompt("New task name:");
@@ -244,6 +279,14 @@
         const val = inputEl.value.trim();
         print(`execute: ${val}`);
         inputEl.value = '';
+
+        if (val.toLowerCase() === 'nvm') {
+          step = 'main';
+          state = {};
+          print("Cancelled.");
+          return;
+        }
+
         if (step === 'user') {
           currentUser = val;
           if (!users[currentUser]) users[currentUser] = { tasks: [] };
@@ -253,12 +296,12 @@
           handleCommand(val);
         } else if (step === 'add_name') {
           state.name = val;
-          prompt("Due date? (MM/DD/YYYY):");
+          prompt("Due date? (MM/DD/YYYY, today, tomorrow, weekday):");
           step = 'add_due';
         } else if (step === 'add_due') {
-          const due = new Date(val);
-          if (isNaN(due)) return print("Invalid date.");
-          users[currentUser].tasks.push({ name: state.name, due: due });
+          const due = parseNaturalDate(val);
+          if (!due) return print("Invalid date.");
+          users[currentUser].tasks.push({ name: state.name, due });
           print(`Added task '${state.name}' due ${formatDate(due)}`);
           step = 'main';
         } else if (step === 'fin_task') {
@@ -325,4 +368,3 @@
   </script>
 </body>
 </html>
-
