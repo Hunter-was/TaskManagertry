@@ -59,6 +59,28 @@
   transition: opacity 1s ease;
   z-index: 9999;
 }
+    #eagle-img {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 150px;
+  opacity: 0;
+  z-index: 9999;
+  animation: flyacross 5s linear forwards;
+}
+
+@keyframes flyacross {
+  0% {
+    bottom: 0;
+    left: 0;
+    opacity: 1;
+  }
+  100% {
+    bottom: 100%;
+    left: 100%;
+    opacity: 0;
+  }
+}
   </style>
 </head>
 <body>
@@ -68,6 +90,8 @@
   <audio id="cena-sound" src="and-his-name-is-john-cena-1.mp3"></audio>
   <img id="biden-img" src="Biden.webp" style="display:none;">
 <audio id="biden-sound" src="Ussong.mp3"></audio>
+  <audio id="eagle-sound" src="eagle.mp3"></audio>
+<img id="eagle-img" src="flyingeagle.webp" style="display:none;">
 
 
   <script>
@@ -177,18 +201,31 @@
       }, 7000);
     }
   
-    function showBiden() {
-  const bidenImg = document.getElementById('biden-img');
-  const bidenSound = document.getElementById('biden-sound');
+function showBiden() {
+  const bidenImg = document.getElementById("biden-img");
+  const bidenSound = document.getElementById("biden-sound");
+  const eagleSound = document.getElementById("eagle-sound");
+  const eagleImg = document.getElementById("eagle-img");
+
+  // Show and play Biden image and sound
   bidenImg.style.display = "block";
   bidenImg.style.opacity = 1;
   bidenSound.currentTime = 0;
   bidenSound.play();
+
+  // Play eagle sound
+  eagleSound.currentTime = 0;
+  eagleSound.play();
+
+  // Animate eagle
+  eagleImg.style.display = "block";
+  eagleImg.style.animation = "flyacross 5s linear forwards";
+
+  // Cleanup after animation (optional)
   setTimeout(() => {
     bidenImg.style.opacity = 0;
-    setTimeout(() => {
-      bidenImg.style.display = "none";
-    }, 1000);
+    eagleImg.style.display = "none";
+    bidenImg.style.display = "none";
   }, 7000);
 }
 
