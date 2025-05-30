@@ -151,6 +151,7 @@
         const time = t.time ? ` at ${t.time}` : '';
         const desc = t.desc || 'none';
         const eta = t.eta ? ` (ETA: ${t.eta})` : '';
+        const repeat = t.repeat ? ` [Repeats: ${t.repeat}]` : '';
         return `${i + 1}. ${t.name} ${formatDate(due)}${time} (${timeLeftString(due)}) - Description: ${desc}${eta}`;
       }).join('\n');
     }
@@ -270,6 +271,9 @@ function showBiden() {
 
       if (command === 'date') {
         print("Current date: " + formatDate(new Date()));
+        } else if (command === 'repeat') {
+  prompt("Which task do you want to repeat? (number):");
+  step = 'repeat_task';
       } else if (command === 'add') {
         prompt("New task name:");
         step = 'add_name';
@@ -421,6 +425,21 @@ function showBiden() {
           currentUser = val;
           print(`Created and switched to ${val}`);
           step = 'main';
+          } else if (step === 'repeat_task') {
+  state.taskIndex = parseInt(val) - 1;
+  if (!users[currentUser].tasks[state.taskIndex]) {
+    print("Task not found.");
+    step = 'main';
+  } else {
+    prompt("Enter repeat rule (e.g., every Monday, every day at 9am):");
+    step = 'repeat_rule';
+  }
+} else if (step === 'repeat_rule') {
+  users[currentUser].tasks[state.taskIndex].repeat = val;
+  print(`Repeat pattern set: "${val}"`);
+  step = 'main';
+}
+
         } else if (step === 'user_switch') {
           if (users[val]) {
             currentUser = val;
