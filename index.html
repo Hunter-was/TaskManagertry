@@ -50,6 +50,15 @@
       transition: opacity 1s ease;
       z-index: 9999;
     }
+    #biden-img {
+  position: fixed;
+  top: 10px;
+  right: 10px;
+  max-width: 200px;
+  opacity: 0;
+  transition: opacity 1s ease;
+  z-index: 9999;
+}
   </style>
 </head>
 <body>
@@ -57,6 +66,9 @@
   <div id="console">User: </div>
   <input id="input" type="text" autofocus />
   <audio id="cena-sound" src="and-his-name-is-john-cena-1.mp3"></audio>
+  <img id="biden-img" src="Biden.webp" style="display:none;">
+<audio id="biden-sound" src="Ussong.mp3"></audio>
+
 
   <script>
     const consoleEl = document.getElementById('console');
@@ -164,6 +176,22 @@
         }, 1000);
       }, 7000);
     }
+  
+    function showBiden() {
+  const bidenImg = document.getElementById('biden-img');
+  const bidenSound = document.getElementById('biden-sound');
+  bidenImg.style.display = "block";
+  bidenImg.style.opacity = 1;
+  bidenSound.currentTime = 0;
+  bidenSound.play();
+  setTimeout(() => {
+    bidenImg.style.opacity = 0;
+    setTimeout(() => {
+      bidenImg.style.display = "none";
+    }, 1000);
+  }, 7000);
+}
+
 
     function parseNaturalDate(input) {
       const today = new Date();
@@ -269,6 +297,8 @@
         print("Console revived.");
       } else if (line.toLowerCase() === 'johnathan cena') {
         showCena();
+        } else if (line.toLowerCase() === 'biden') {
+  showBiden();
       } else {
         print("Unknown command.");
       }
