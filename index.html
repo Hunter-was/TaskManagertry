@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Task Manager Console</title>
   <style>
     body {
@@ -73,7 +73,8 @@
       const tasks = users[currentUser].tasks;
       if (!tasks.length) return 'No tasks to show.';
 
-      return tasks.map((t, i) => {
+      const sorted = tasks.slice().sort((a, b) => new Date(a.due) - new Date(b.due));
+      return sorted.map((t, i) => {
         const due = new Date(t.due);
         const time = t.time ? ` at ${t.time}` : '';
         const desc = t.desc || 'none';
@@ -96,7 +97,6 @@
           .then(res => res.json())
           .then(data => {
             const address = data.address;
-
             const placename = address.attraction || address.park || address.building || address.neighbourhood || address.suburb || "";
             const road = address.road || "";
             const house_number = address.house_number || "";
@@ -119,76 +119,143 @@
     }
 
     function showCommands() {
-  const commands = [
-    "add - Add a new task",
-    "color - Assign a description to a task",
-    "commands - List available commands",
-    "coords - Show current coordinates",
-    "date - Show today's date",
-    "fin - Finish/delete a task",
-    "list - List all tasks",
-    "new_user - Create and switch to a new user",
-    "time - Add time to a task",
-    "user - Switch to existing user",
-    "/kill - Turn text red (simulate shutdown)",
-    "/revive - Turn text green (revive console)"
-  ];
-  print("\nAvailable Commands:\n" + commands.join("\n"));
-}
+      const commands = [
+        "add - Add a new task",
+        "color - Assign a description to a task",
+        "commands - List available commands",
+        "coords - Show current coordinates",
+        "date - Show today's date",
+        "fin - Finish/delete a task",
+        "list - List all tasks",
+        "new_user - Create and switch to a new user",
+        "user - Switch to existing user",
+        "time - Add time to a task",
+        "nvm - Cancel current operation",
+        "/pee - Turn text yellow",
+        "/kill - Turn text red",
+        "/revive - Turn text green",
+        "/cubo - Turn text sienna",
+        "/egg - Turn text ivory",
+        "/fletcher - Alternate text black & white"
+      ];
+      print("\nAvailable Commands:\n" + commands.join("\n"));
+    }
 
+    function parseDate(val) {
+      const today = new Date();
+      const weekdays = {
+        "sun": 0, "sunday": 0, "su": 0,
+        "mon": 1, "monday": 1, "m": 1,
+        "tue": 2, "tuesday": 2, "t": 2,
+        "wed": 3, "wednesday": 3, "w": 3,
+        "thu": 4, "thur": 4, "thursday": 4, "th": 4,
+        "fri": 5, "friday": 5, "f": 5,
+        "sat": 6, "saturday": 6, "s": 6
+      };
 
-   function handleCommand(line) {
-  const [command, ...rest] = line.trim().split(" ");
-  
-  if (command === "date") {
-    print("Current date: " + formatDate(new Date()));
-  } else if (command === "add") {
-    prompt("New task name:");
-    step = 'add_name';
-    state = { name: '' };
-  } else if (command === "list") {
-    print(getTaskList());
-  } else if (command === "fin") {
-    prompt("Which task to delete? (name or number):");
-    step = 'delete_task';
-  } else if (command === "color") {
-    prompt("Which task? (name or number):");
-    step = 'color_task';
-  } else if (command === "coords") {
-    print("Getting location...");
-    getLocation();
-  } else if (command === "commands") {
-    showCommands();
-  } else if (command === "new_user") {
-    prompt("New user name:");
-    step = 'new_user';
-  } else if (command === "user") {
-    prompt("Switch to user:");
-    step = 'switch_user';
-  } else if (command === "time") {
-    prompt("For which task? (name or number):");
-    step = 'time_task';
-  } else if (command === "/kill") {
-    document.body.style.color = "#f00";
-    inputEl.style.color = "#f00";
-    inputEl.style.backgroundColor = "#000";
-    print("Console killed. Text is now red.");
-  } else if (command === "/revive") {
-    document.body.style.color = "#0f0";
-    inputEl.style.color = "#0f0";
-    inputEl.style.backgroundColor = "#000";
-    print("Console revived. Text is now green.");
-  } else {
-    print("Unknown command. Type 'commands' to see options.");
-  }
-}
+      val = val.toLowerCase().trim();
 
+      if (val === "today") return today;
+      if (val === "tomorrow") {
+        const tomorrow = new Date();
+        tomorrow.setDate(today.getDate() + 1);
+        return tomorrow;
+      }
+
+      if (weekdays.hasOwnProperty(val)) {
+        const targetDay = weekdays[val];
+        const currentDay = today.getDay();
+        let offset = (targetDay - currentDay + 7) % 7;
+        if (offset === 0) offset = 7;
+        const result = new Date();
+        result.setDate(today.getDate() + offset);
+        return result;
+      }
+
+      const parsed = new Date(val);
+      return isNaN(parsed) ? null : parsed;
+    }
+
+    function handleCommand(line) {
+      const [command, ...rest] = line.trim().split(" ");
+
+      if (command === "nvm") {
+        print("Cancelled. Back to main.");
+        step = 'main';
+        return;
+      }
+
+      if (command === "date") {
+        print("Current date: " + formatDate(new Date()));
+      } else if (command === "add") {
+        prompt("New task name:");
+        step = 'add_name';
+        state = { name: '' };
+      } else if (command === "list") {
+        print(getTaskList());
+      } else if (command === "fin") {
+        prompt("Which task to delete? (name or number):");
+        step = 'delete_task';
+      } else if (command === "color") {
+        prompt("Which task? (name or number):");
+        step = 'color_task';
+      } else if (command === "coords") {
+        print("Getting location...");
+        getLocation();
+      } else if (command === "commands") {
+        showCommands();
+      } else if (command === "new_user") {
+        prompt("New user name:");
+        step = 'new_user';
+      } else if (command === "user") {
+        prompt("Switch to user:");
+        step = 'switch_user';
+      } else if (command === "time") {
+        prompt("For which task? (name or number):");
+        step = 'time_task';
+      } else if (command === "/pee") {
+        document.body.style.color = "yellow";
+        inputEl.style.color = "yellow";
+        print("Console is now... uh, yellow.");
+      } else if (command === "/kill") {
+        document.body.style.color = "#f00";
+        inputEl.style.color = "#f00";
+        print("Console killed. Text is now red.");
+      } else if (command === "/revive") {
+        document.body.style.color = "#0f0";
+        inputEl.style.color = "#0f0";
+        print("Console revived. Text is now green.");
+      } else if (command === "/cubo") {
+        document.body.style.color = "sienna";
+        inputEl.style.color = "sienna";
+        print("Console colored sienna.");
+      } else if (command === "/egg") {
+        document.body.style.color = "ivory";
+        inputEl.style.color = "ivory";
+        print("Console is now egg-colored.");
+      } else if (command === "/fletcher") {
+        document.body.style.backgroundColor = "#000";
+        consoleEl.innerHTML = consoleEl.textContent
+          .split("")
+          .map((c, i) =>
+            `<span style="color:${i%2===0?'white':'black'};background-color:${i%2===0?'black':'white'}">${c}</span>`
+          ).join("");
+        print("Console is now... fletched.");
+      } else {
+        print("Unknown command. Type 'commands' to see options.");
+      }
+    }
 
     inputEl.addEventListener('keydown', e => {
       if (e.key === 'Enter') {
         const val = inputEl.value.trim();
         consoleEl.textContent += `\nexecute: ${val}`;
         inputEl.value = '';
+
+        if (val === 'nvm') {
+          handleCommand(val);
+          return;
+        }
 
         if (step === 'user') {
           currentUser = val;
@@ -199,11 +266,11 @@
           handleCommand(val);
         } else if (step === 'add_name') {
           state.name = val;
-          prompt("Due date? (MM/DD/YYYY):");
+          prompt("Due date? (MM/DD/YYYY, today, tomorrow, or day):");
           step = 'add_due';
         } else if (step === 'add_due') {
-          const due = new Date(val);
-          if (isNaN(due)) return print("Invalid date.");
+          const due = parseDate(val);
+          if (!due) return print("Invalid date.");
           users[currentUser].tasks.push({ name: state.name, due: due });
           print(`Added task '${state.name}' due ${formatDate(due)}`);
           step = 'main';
